@@ -40,6 +40,7 @@ import encodings.latin_1
 import encodings.utf_8
 import errno
 import fcntl
+import functools
 import itertools
 import linecache
 import logging
@@ -740,8 +741,15 @@ if PY3:
     # cannot be overridden without subclassing.
     class _Unpickler(pickle.Unpickler):
         def find_class(self, module, func):
-            return self.find_global(module, func)
-    pickle__dumps = pickle.dumps
+            try:
+                return self.find_global(module, func)
+            except StreamError:
+                try:
+                    return super().find_class(module, func)
+                except Exception as err:
+                    raise StreamError('cannot unpickle %r/%r', module, func) from err
+
+    pickle__dumps = functools.partial(pickle.dumps, protocol=2)
 elif PY24:
     # On Python 2.4, we must use a pure-Python pickler.
     pickle__dumps = Py24Pickler.dumps
