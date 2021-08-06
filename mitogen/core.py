@@ -138,6 +138,8 @@ STUB_CALL_SERVICE = 111
 #:    :meth:`mitogen.core.Router.add_handler` callbacks to clean up.
 IS_DEAD = 999
 
+PICKLE_PROTO = 2
+
 try:
     BaseException
 except NameError:
@@ -749,7 +751,7 @@ if PY3:
                 except Exception as err:
                     raise StreamError('cannot unpickle %r/%r', module, func) from err
 
-    pickle__dumps = functools.partial(pickle.dumps, protocol=2)
+    pickle__dumps = functools.partial(pickle.dumps, protocol=PICKLE_PROTO)
 elif PY24:
     # On Python 2.4, we must use a pure-Python pickler.
     pickle__dumps = Py24Pickler.dumps
@@ -889,10 +891,10 @@ class Message(object):
         """
         self = cls(**kwargs)
         try:
-            self.data = pickle__dumps(obj, protocol=2)
+            self.data = pickle__dumps(obj, protocol=PICKLE_PROTO)
         except pickle.PicklingError:
             e = sys.exc_info()[1]
-            self.data = pickle__dumps(CallError(e), protocol=2)
+            self.data = pickle__dumps(CallError(e), protocol=PICKLE_PROTO)
         return self
 
     def reply(self, msg, router=None, **kwargs):
